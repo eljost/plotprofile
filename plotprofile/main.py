@@ -112,6 +112,9 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
         fig.suptitle(rx_name)
         plt.show()
 
+    if len(rx_energies.keys()) == 1:
+        return
+
     fig, ax = plt.subplots()
     all_rx_energies -= all_rx_energies.min()
     all_rx_energies *= AU2KJMOL

@@ -1,0 +1,16 @@
+program: orca
+molecules:
+ hcn:
+  freq: 05_hcn_iso_educt_freq.out
+  solv: 06_hcn_iso_educt_solv.out
+ ts:
+  freq: 02_hcn_iso_ts_freq.out
+  solv: 03_hcn_iso_ts_solv.out
+ cnh:
+  freq: 07_hcn_iso_product_freq.out
+  solv: 08_hcn_iso_product_solv.out
+reactions:
+ hcn_isomerization:
+  educts: hcn
+  ts: ts
+  products: cnh
