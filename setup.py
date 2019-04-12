@@ -19,8 +19,8 @@ setup(
     install_requires=[
         "matplotlib",
         "numpy",
+        "pandas",
         "pyyaml",
-        "jinja2",
     ],
     entry_points={
         "console_scripts": [

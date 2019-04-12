@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
+from pprint import pprint
 import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import yaml
 
 from plotprofile.parser import parse_orca
@@ -21,12 +23,14 @@ def load_molecule_energies(molecules, program):
 
     energies = dict()
     for mol_name, as_dict in molecules.items():
+        print(f"Molecule '{mol_name}'")
         freq_fn = as_dict["freq"]
         scf_fn = as_dict.get("scf", None)
         solv_fn = as_dict.get("solv", None)
         thermo = parser(freq_fn, solv_fn, scf_fn)
         total_energy = thermo.single_point_alt + thermo.g_solv
         energies[mol_name] = total_energy
+        print()
     return energies
 
 
@@ -45,7 +49,8 @@ def make_reactions(reactions, mol_energies):
     rx_energies = dict()
     all_rx_energies = list()
     for rx_name, reagents in reactions.items():
-        print(rx_name, reagents)
+        print(f"Calculating energies for reaction '{rx_name}'")
+        pprint(reagents)
         educts = to_list(reagents["educts"])
         ts = reagents["ts"]
         products = to_list(reagents["products"])
@@ -62,6 +67,7 @@ def make_reactions(reactions, mol_energies):
             energies += add_energy
         rx_energies[rx_name] = energies
         all_rx_energies.extend(energies.copy())
+        print()
     all_rx_energies = np.array(all_rx_energies)
     return rx_energies, all_rx_energies
 
@@ -124,6 +130,14 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
     plt.show()
 
 
+def dump_energies(rx_energies):
+    cols = "educts ts products".split()
+    df = pd.DataFrame.from_dict(rx_energies, orient="index", columns=cols)
+    csv_fn = "path_energies.csv"
+    df.to_csv(csv_fn)
+    print(f"Dumped energies to {csv_fn}.")
+
+
 def parse_args(args):
     parser = argparse.ArgumentParser()
 
@@ -138,12 +152,16 @@ def run():
         inp_dict = yaml.load(handle)
 
     mol_energies = load_molecule_energies(inp_dict["molecules"], inp_dict["program"])
-    from pprint import pprint
+    print("Using these G(sol) values:")
     pprint(mol_energies)
+    print()
 
     rx_energies, all_rx_energies = make_reactions(inp_dict["reactions"], mol_energies)
+    print("Calculated reaction energies:")
     pprint(rx_energies)
+    print()
 
+    dump_energies(rx_energies)
     plot_rx_energies(rx_energies, all_rx_energies, inp_dict["reactions"])
 
 

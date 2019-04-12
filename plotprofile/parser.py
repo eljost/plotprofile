@@ -15,8 +15,11 @@ ThermoSolvTuple = namedtuple("ThermoSolvTuple",
 def parse_g_solv(text):
     """Returns Corrected G(solv) in Hartree."""
     g_solv_re = re.compile("Corrected G\(solv\)\s+:\s+" + FLOAT_RE + " Eh")
-    mobj = g_solv_re.search(text)
-    g_solv_tot = float(mobj[1])
+    # mobj = g_solv_re.search(text)
+    # g_solv_tot = float(mobj[1])
+    all_g_solv_tots = g_solv_re.findall(text)
+    print(f"Found {len(all_g_solv_tots)} solvated calculation(s). Using the last one.")
+    g_solv_tot = float(all_g_solv_tots[-1])
     return g_solv_tot
 
 
@@ -28,7 +31,7 @@ def parse_thermo(text):
 
     gibbs_re = re.compile("Final Gibbs free enthalpy\s+\.\.\.\s+" + FLOAT_RE + " Eh")
     all_gibbs = gibbs_re.findall(text)
-    print(f"Found {len(all_gibbs)} thermochemistry calculations. Using the last one.")
+    print(f"Found {len(all_gibbs)} thermochemistry calculation(s). Using the last one.")
     gibbs = float(all_gibbs[-1])
 
     thermo = ThermoTuple(
@@ -39,6 +42,7 @@ def parse_thermo(text):
 
 
 def parse_orca(freq_fn, solv_fn=None, scf_fn=None):
+    print(f"Reading thermochemistry data from '{freq_fn}'.")
     with open(freq_fn) as handle:
         freq_text = handle.read()
     thermo = parse_thermo(freq_text)
@@ -46,6 +50,7 @@ def parse_orca(freq_fn, solv_fn=None, scf_fn=None):
     single_point_alt = thermo.single_point
     g_solv = 0.0
     if solv_fn:
+        print(f"Reading solvation data from '{solv_fn}'.")
         with open(solv_fn) as handle:
             solv_text = handle.read()
         g_solv_tot = parse_g_solv(solv_text)
