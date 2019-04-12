@@ -3,12 +3,15 @@ molecules:
  hcn:
   freq: 05_hcn_iso_educt_freq.out
   solv: 06_hcn_iso_educt_solv.out
+  scf: 10_hcn_iso_educt_dlpnoccsdt.out
  ts:
   freq: 02_hcn_iso_ts_freq.out
   solv: 03_hcn_iso_ts_solv.out
+  scf: 09_hcn_iso_ts_dlpnoccsdt.out
  cnh:
   freq: 07_hcn_iso_product_freq.out
   solv: 08_hcn_iso_product_solv.out
+  scf: 11_hcn_iso_product_dlpnoccsdt.out
 reactions:
  hcn_isomerization:
   educts: hcn

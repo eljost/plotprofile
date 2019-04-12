@@ -18,20 +18,24 @@ def parse_g_solv(text):
     # mobj = g_solv_re.search(text)
     # g_solv_tot = float(mobj[1])
     all_g_solv_tots = g_solv_re.findall(text)
-    print(f"Found {len(all_g_solv_tots)} solvated calculation(s). Using the last one.")
+    print(f"\tFound {len(all_g_solv_tots)} solvated calculation(s). Using the last one.")
     g_solv_tot = float(all_g_solv_tots[-1])
     return g_solv_tot
 
 
-def parse_thermo(text):
+def parse_final_single_point(text):
     single_point_re = re.compile("FINAL SINGLE POINT ENERGY\s+" + FLOAT_RE)
     all_ens = single_point_re.findall(text)
-    print(f"Found {len(all_ens)} single point energies. Using the last one.")
+    print(f"\tFound {len(all_ens)} final single point energies. Using the last one.")
     single_point = float(all_ens[-1])
+    return single_point
 
+
+def parse_thermo(text):
+    single_point = parse_final_single_point(text)
     gibbs_re = re.compile("Final Gibbs free enthalpy\s+\.\.\.\s+" + FLOAT_RE + " Eh")
     all_gibbs = gibbs_re.findall(text)
-    print(f"Found {len(all_gibbs)} thermochemistry calculation(s). Using the last one.")
+    print(f"\tFound {len(all_gibbs)} thermochemistry calculation(s). Using the last one.")
     gibbs = float(all_gibbs[-1])
 
     thermo = ThermoTuple(
@@ -56,7 +60,10 @@ def parse_orca(freq_fn, solv_fn=None, scf_fn=None):
         g_solv_tot = parse_g_solv(solv_text)
         g_solv = g_solv_tot - thermo.single_point
     if scf_fn:
-        raise Exception("Ignoring this right now!")
+        print(f"Reading alternative single point energy from '{scf_fn}'")
+        with open(scf_fn) as handle:
+            single_point_alt_text = handle.read()
+        single_point_alt = parse_final_single_point(single_point_alt_text)
 
     thermo_solv = ThermoSolvTuple(
                     *thermo,
