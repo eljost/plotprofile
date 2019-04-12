@@ -9,7 +9,8 @@ import yaml
 
 from plotprofile.parser import parse_orca
 
-AU2KJMOL = 2625.50
+
+AU2KJMOL = 2625.49638 # PT pleaaaase
 
 
 def load_molecule_energies(molecules, program):
