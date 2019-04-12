@@ -55,7 +55,6 @@ def make_reactions(reactions, mol_energies):
         ts = reagents["ts"]
         products = to_list(reagents["products"])
 
-        # import pdb; pdb.set_trace()
         educt_en = energy_sum(educts)
         ts_en = mol_energies[ts]
         product_en  = energy_sum(products)
@@ -100,6 +99,7 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
         labels = [v for k, v in rx_labels[rx_name].items() if k!= "add"]
         label_strs = [", ".join(to_list(lbl)) for lbl in labels]
         all_label_strs.extend(label_strs)
+        ed_lbl, _, prod_lbl = label_strs
 
         ens = energies - energies.min()
         ens *= AU2KJMOL
@@ -115,7 +115,10 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
         ax.spines["bottom"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.tick_params(bottom=False, labelbottom=False)
-        fig.suptitle(rx_name)
+        fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}")
+        pdf_name = f"{rx_name}.pdf"
+        fig.savefig(pdf_name)
+        print(f"saved PDF to '{pdf_name}'")
         plt.show()
 
     if len(rx_energies.keys()) == 1:
@@ -126,7 +129,11 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
     all_rx_energies *= AU2KJMOL
     xs = np.arange(all_rx_energies.size)
     ax.plot(xs, all_rx_energies, **plot_kwargs)
+    ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
     set_labels(ax, xs, all_rx_energies, all_label_strs)
+    pdf_name = f"overview.pdf"
+    fig.savefig(pdf_name)
+    print(f"saved PDF to 'overview.pdf'")
     plt.show()
 
 
@@ -141,7 +148,10 @@ def dump_energies(rx_energies):
 def parse_args(args):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("yaml")
+    parser.add_argument("yaml",
+        help=".yaml file containing the description of all relevant molecules "
+             "and reactions"
+    )
 
     return parser.parse_args(args)
 

@@ -15,8 +15,6 @@ ThermoSolvTuple = namedtuple("ThermoSolvTuple",
 def parse_g_solv(text):
     """Returns Corrected G(solv) in Hartree."""
     g_solv_re = re.compile("Corrected G\(solv\)\s+:\s+" + FLOAT_RE + " Eh")
-    # mobj = g_solv_re.search(text)
-    # g_solv_tot = float(mobj[1])
     all_g_solv_tots = g_solv_re.findall(text)
     print(f"\tFound {len(all_g_solv_tots)} solvated calculation(s). Using the last one.")
     g_solv_tot = float(all_g_solv_tots[-1])
