@@ -16,3 +16,5 @@ python setup.py develop
 ```
 plotprofile [yaml]
 ```
+
+Calculated data is dumped to a CSV file.
