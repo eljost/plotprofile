@@ -120,7 +120,7 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
         barrier = ts - educt
         print(f"\tbarrier = {barrier:.1f} kJ/mol")
         T = 298.15
-        k = reaction_rate(barrier*1000)
+        k = reaction_rate(barrier*1000, temperature=T)
         print(f"\tTST rate constant k = {k:.4e} 1/s (using T={T:.2f} K)")
         fig, ax = plt.subplots()
         ax.plot(xs, ens, **plot_kwargs)
