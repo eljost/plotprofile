@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# [1] 10.1021/acs.organomet.8b00456
+#     https://pubs.acs.org/doi/10.1021/acs.organomet.8b00456
+
 import argparse
 from pprint import pprint
 import sys
@@ -13,6 +16,9 @@ from plotprofile.parser import parse_orca
 
 
 AU2KJMOL = 2625.499638 # PT pleaaaase
+KB = 1.380649e-23 # J/K, Boltzmann constant
+R = 8.3144598 # J/(K*mol), ideal gas constant
+H_PLANCK = 6.62607e-34 # Js, Planck constant
 
 
 def load_molecule_energies(molecules, program):
@@ -71,6 +77,12 @@ def make_reactions(reactions, mol_energies):
     return rx_energies, all_rx_energies
 
 
+def reaction_rate(activation_energy, temperature=298.15):
+    """Eyring equation, returns k in units of 1/s."""
+    T = temperature
+    return KB*T/H_PLANCK * np.exp(-activation_energy/(R*T))
+
+
 def set_labels(ax, xs, ys, label_strs):
     min_y = min(ys)
     for x, y, lbl in zip(xs, ys, label_strs):
@@ -96,6 +108,7 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
     }
     all_label_strs = list()
     for rx_name, energies in rx_energies.items():
+        print(rx_name)
         labels = [v for k, v in rx_labels[rx_name].items() if k!= "add"]
         label_strs = [", ".join(to_list(lbl)) for lbl in labels]
         all_label_strs.extend(label_strs)
@@ -105,7 +118,10 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
         ens *= AU2KJMOL
         educt, ts, product = ens
         barrier = ts - educt
-        print(f"{rx_name}: barrier = {barrier:.1f} kJ/mol")
+        print(f"\tbarrier = {barrier:.1f} kJ/mol")
+        T = 298.15
+        k = reaction_rate(barrier*1000)
+        print(f"\tTST rate constant k = {k:.4e} 1/s (using T={T:.2f} K)")
         fig, ax = plt.subplots()
         ax.plot(xs, ens, **plot_kwargs)
         ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
@@ -115,10 +131,11 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
         ax.spines["bottom"].set_visible(False)
         ax.spines["right"].set_visible(False)
         ax.tick_params(bottom=False, labelbottom=False)
-        fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}")
+        fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
         pdf_name = f"{rx_name}.pdf"
         fig.savefig(pdf_name)
-        print(f"saved PDF to '{pdf_name}'")
+        print(f"\tsaved PDF to '{pdf_name}'")
+        print()
         plt.show()
 
     if len(rx_energies.keys()) == 1:
