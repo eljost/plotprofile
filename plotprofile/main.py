@@ -98,7 +98,7 @@ def plot_barrier(ax, x, y, barrier):
     ax.text(x+.05, y+(barrier/2), f"{barrier:.1f} kJ/mol")
 
 
-def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
+def plot_rx_energies(rx_energies, all_rx_energies, rx_labels, temperature):
     xs = [0, 1, 2]
     plot_kwargs = {
         "ms": 20,
@@ -119,9 +119,9 @@ def plot_rx_energies(rx_energies, all_rx_energies, rx_labels):
         educt, ts, product = ens
         barrier = ts - educt
         print(f"\tbarrier = {barrier:.1f} kJ/mol")
-        T = 298.15
-        k = reaction_rate(barrier*1000, temperature=T)
-        print(f"\tTST rate constant k = {k:.4e} 1/s (using T={T:.2f} K)")
+        k = reaction_rate(barrier*1000, temperature=temperature)
+        print(f"\tTST rate constant k = {k:.4e} 1/s "
+              f"(using T={temperature:.2f} K)")
         fig, ax = plt.subplots()
         ax.plot(xs, ens, **plot_kwargs)
         ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
@@ -169,6 +169,9 @@ def parse_args(args):
         help=".yaml file containing the description of all relevant molecules "
              "and reactions"
     )
+    parser.add_argument("-T", default=298.15, type=float,
+        help="Temperature to use for TST reaction rate calculation."
+    )
 
     return parser.parse_args(args)
 
@@ -189,7 +192,7 @@ def run():
     print()
 
     dump_energies(rx_energies)
-    plot_rx_energies(rx_energies, all_rx_energies, inp_dict["reactions"])
+    plot_rx_energies(rx_energies, all_rx_energies, inp_dict["reactions"], args.T)
 
 
 if __name__ == "__main__":
