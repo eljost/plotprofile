@@ -84,5 +84,6 @@ def run():
     thermo = parse_orca(freq, solv)
     print(thermo)
 
+
 if __name__ == "__main__":
     run()
