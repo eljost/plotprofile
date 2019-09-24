@@ -6,6 +6,7 @@
 import argparse
 from collections import namedtuple
 import itertools as it
+from pathlib import Path
 from pprint import pprint
 import sys
 
@@ -41,9 +42,14 @@ def load_thermos(molecules, program):
     energies = dict()
     thermos = dict()
     for mol_name, as_dict in molecules.items():
-        freq_fn = as_dict["freq"]
+        base_path = Path(as_dict.get("base", "./"))
+        # Frequency calculation is mandatory, alternative single point (scf)
+        # and solvated calculation are optional.
+        freq_fn = base_path / as_dict["freq"]
         scf_fn = as_dict.get("scf", None)
+        scf_fn = base_path / scf_fn if scf_fn else None
         solv_fn = as_dict.get("solv", None)
+        solv_fn = base_path / solv_fn if solv_fn else None
         thermo = parser(freq_fn, solv_fn, scf_fn)
         thermos[mol_name] = thermo
     return thermos
