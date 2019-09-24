@@ -166,7 +166,7 @@ def plot_barrier(ax, x, y, barrier):
     ax.text(x+.05, y+(barrier/2), f"{barrier:.1f} kJ/mol")
 
 
-def plot_rx_energies(rx_energies, rx_labels, temperature):
+def plot_rx_energies(rx_energies, rx_labels, temperature, summary=True):
     xs = [0, 1, 2]
     plot_kwargs = {
         "ms": 20,
@@ -226,9 +226,9 @@ def plot_rx_energies(rx_energies, rx_labels, temperature):
     ax.plot(xs, all_rx_energies, **plot_kwargs)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
     set_labels(ax, xs, all_rx_energies, all_label_strs)
-    pdf_name = f"overview.pdf"
-    fig.savefig(pdf_name)
-    print(f"saved PDF to 'overview.pdf'")
+    summary_fn = "summary.pdf"
+    fig.savefig(summary_fn)
+    print(f"saved PDF to '{summary_fn}'")
     plt.show()
 
 
@@ -273,6 +273,7 @@ def parse_args(args):
     )
     parser.add_argument("--parsedash", action="store_true")
     parser.add_argument("--no_alt", action="store_true")
+    parser.add_argument("--nosummary", action="store_true")
 
     return parser.parse_args(args)
 
@@ -281,6 +282,7 @@ def run():
     args = parse_args(sys.argv[1:])
 
     no_alt = args.no_alt
+    summary = not args.nosummary
 
     with open(args.yaml) as handle:
         inp_dict = yaml.load(handle)
@@ -316,7 +318,7 @@ def run():
     print()
 
     dump_energies(rx_energies)
-    plot_rx_energies(rx_energies, inp_dict["reactions"], args.T)
+    plot_rx_energies(rx_energies, inp_dict["reactions"], args.T, summary)
 
 
 if __name__ == "__main__":
