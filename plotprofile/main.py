@@ -326,7 +326,7 @@ def run():
     rx_labels = {}
     rxs = inp_dict["reactions"]
     # Create label strings for plotting
-    for rx_name in inp_dict["reactions"]:
+    for rx_name in rxs:
         labels = [v for k, v in rxs[rx_name].items() if k!= "add"]
         label_strs = [", ".join(to_list(lbl)) for lbl in labels]
         rx_labels[rx_name] = label_strs
@@ -336,6 +336,7 @@ def run():
     best_rx_energies = {
         rx_name: rx_energies[rx_name]["G_solv_alt"] for rx_name in rx_labels
     }
+
     plot_kwargs = {
         "ms": 20,
         "color": "k",
@@ -343,7 +344,9 @@ def run():
         "linestyle": "--",
     }
     plot_rx_energies(best_rx_energies, rx_labels, args.T, plot_kwargs)
-    plot_paths(best_rx_energies, inp_dict["paths"], rx_labels, plot_kwargs)
+    paths = inp_dict.get("paths", None)
+    if paths:
+        plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
 
 
 if __name__ == "__main__":
