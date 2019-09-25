@@ -17,3 +17,6 @@ reactions:
   educts: hcn
   ts: ts
   products: cnh
+paths:
+ hcn_isomerization:
+  - hcn_isomerization
