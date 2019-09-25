@@ -277,7 +277,7 @@ def parse_args(args):
     )
     parser.add_argument("--parsedash", action="store_true")
     parser.add_argument("--no_alt", action="store_true")
-    # parser.add_argument("--nosummary", action="store_true")
+    parser.add_argument("--nopaths", action="store_true")
 
     return parser.parse_args(args)
 
@@ -286,7 +286,6 @@ def run():
     args = parse_args(sys.argv[1:])
 
     no_alt = args.no_alt
-    # summary = not args.nosummary
 
     with open(args.yaml) as handle:
         inp_dict = yaml.load(handle)
@@ -344,9 +343,18 @@ def run():
         "linestyle": "--",
     }
     plot_rx_energies(best_rx_energies, rx_labels, args.T, plot_kwargs)
+
+    if args.nopaths:
+        print("Skipped reaction paths!")
+        return
+
     paths = inp_dict.get("paths", None)
-    if paths:
-        plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
+    if paths is None:
+        print("Found no defined paths in .yaml file. Using all defined "
+              "reactions instead.")
+        paths = {"reaction path": list(rxs.keys())}
+
+    plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
 
 
 if __name__ == "__main__":
