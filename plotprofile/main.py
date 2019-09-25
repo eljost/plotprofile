@@ -173,39 +173,40 @@ def plot_barrier(ax, x, y, barrier):
 
 
 def plot_rx_energies(rx_energies, rx_labels, temperature, plot_kwargs):
-    xs = [0, 1, 2]
-
     for rx_name, energies in rx_energies.items():
-        print(rx_name)
-        labels = [v for k, v in rx_labels[rx_name].items() if k!= "add"]
-        label_strs = [", ".join(to_list(lbl)) for lbl in labels]
-        ed_lbl, _, prod_lbl = label_strs
+        labels = rx_labels[rx_name]
+        plot_rx(rx_name, energies, labels, temperature, plot_kwargs)
 
-        ens = energies - energies.min()
-        ens *= AU2KJMOL
-        educt, ts, product = ens
-        barrier = ts - educt
-        kcal_barrier = barrier / CAL2J
-        print(f"\tbarrier = {barrier:.1f} kJ/mol ({kcal_barrier:.1f} kcal/mol)")
-        k = reaction_rate(barrier*1000, temperature=temperature)
-        k_day = k * 3600 * 24
-        print(f"\tTST rate constant k = {k:.4e} 1/s ({k_day:.4e} 1/d) "
-              f"@ T={temperature:.2f} K")
-        fig, ax = plt.subplots()
-        ax.plot(xs, ens, **plot_kwargs)
-        ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
-        set_labels(ax, xs, ens, label_strs)
-        plot_barrier(ax, 0, educt, barrier)
-        ax.spines["top"].set_visible(False)
-        ax.spines["bottom"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.tick_params(bottom=False, labelbottom=False)
-        fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
-        pdf_name = f"{rx_name}.pdf"
-        fig.savefig(pdf_name)
-        print(f"\tsaved PDF to '{pdf_name}'")
-        print()
-        plt.show()
+def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
+    xs = [0, 1, 2]
+    print(rx_name)
+    ed_lbl, _, prod_lbl = labels
+
+    ens = energies - energies.min()
+    ens *= AU2KJMOL
+    educt, ts, product = ens
+    barrier = ts - educt
+    kcal_barrier = barrier / CAL2J
+    print(f"\tbarrier = {barrier:.1f} kJ/mol ({kcal_barrier:.1f} kcal/mol)")
+    k = reaction_rate(barrier*1000, temperature=temperature)
+    k_day = k * 3600 * 24
+    print(f"\tTST rate constant k = {k:.4e} 1/s ({k_day:.4e} 1/d) "
+          f"@ T={temperature:.2f} K")
+    fig, ax = plt.subplots()
+    ax.plot(xs, ens, **plot_kwargs)
+    ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
+    set_labels(ax, xs, ens, labels)
+    plot_barrier(ax, 0, educt, barrier)
+    ax.spines["top"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.tick_params(bottom=False, labelbottom=False)
+    fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
+    pdf_name = f"{rx_name}.pdf"
+    fig.savefig(pdf_name)
+    print(f"\tsaved PDF to '{pdf_name}'")
+    print()
+    plt.show()
 
 
 def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
@@ -214,9 +215,7 @@ def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
         path_labels = list()
         for rx_name in rx_names:
             path_energies.extend(rx_energies[rx_name])
-            labels = [v for k, v in rx_labels[rx_name].items() if k != "add"]
-            label_strs = [", ".join(to_list(lbl)) for lbl in labels]
-            path_labels.extend(label_strs)
+            path_labels.extend(rx_labels[rx_name])
         path_energies = np.array(path_energies)
         plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs)
 
@@ -325,9 +324,16 @@ def run():
 
     # dump_energies(rx_energies)
 
+    rx_labels = {}
+    rxs = inp_dict["reactions"]
+    # Create label strings for plotting
+    for rx_name in inp_dict["reactions"]:
+        labels = [v for k, v in rxs[rx_name].items() if k!= "add"]
+        label_strs = [", ".join(to_list(lbl)) for lbl in labels]
+        rx_labels[rx_name] = label_strs
+
     # Try to use the 'best' energies for plotting. That is with alternative
     # single point and solvation.
-    rx_labels = inp_dict["reactions"]
     best_rx_energies = {
         rx_name: rx_energies[rx_name]["G_solv_alt"] for rx_name in rx_labels
     }
