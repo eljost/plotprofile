@@ -172,28 +172,13 @@ def plot_barrier(ax, x, y, barrier):
     ax.text(x+.05, y+(barrier/2), f"{barrier:.1f} kJ/mol")
 
 
-def plot_rx_energies(rx_energies, rx_labels, temperature, summary=True):
+def plot_rx_energies(rx_energies, rx_labels, temperature, plot_kwargs):
     xs = [0, 1, 2]
-    plot_kwargs = {
-        "ms": 20,
-        "color": "k",
-        "marker": "_",
-        "linestyle": "--",
-    }
-    all_label_strs = list()
-    rx_energies = {
-        rx_name: rx_energies[rx_name]["G_solv_alt"] for rx_name in rx_labels
-    }
-    all_rx_energies = np.array(
-        list(it.chain(*[rx_energies[rx_name] for rx_name in rx_energies.keys()]))
-    )
-    start_energy = all_rx_energies[0]
 
     for rx_name, energies in rx_energies.items():
         print(rx_name)
         labels = [v for k, v in rx_labels[rx_name].items() if k!= "add"]
         label_strs = [", ".join(to_list(lbl)) for lbl in labels]
-        all_label_strs.extend(label_strs)
         ed_lbl, _, prod_lbl = label_strs
 
         ens = energies - energies.min()
@@ -222,19 +207,34 @@ def plot_rx_energies(rx_energies, rx_labels, temperature, summary=True):
         print()
         plt.show()
 
-    if len(rx_energies.keys()) == 1:
-        return
+
+def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
+    for path_name, rx_names in paths.items():
+        path_energies = list()
+        path_labels = list()
+        for rx_name in rx_names:
+            path_energies.extend(rx_energies[rx_name])
+            labels = [v for k, v in rx_labels[rx_name].items() if k != "add"]
+            label_strs = [", ".join(to_list(lbl)) for lbl in labels]
+            path_labels.extend(label_strs)
+        path_energies = np.array(path_energies)
+        plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs)
+
+
+def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
+    start_energy = path_energies[0]
 
     fig, ax = plt.subplots()
-    all_rx_energies -= all_rx_energies[0]
-    all_rx_energies *= AU2KJMOL
-    xs = np.arange(all_rx_energies.size)
-    ax.plot(xs, all_rx_energies, **plot_kwargs)
+    path_energies -= path_energies[0]
+    path_energies *= AU2KJMOL
+    xs = np.arange(path_energies.size)
+    ax.plot(xs, path_energies, **plot_kwargs)
+    ax.set_title(path_name)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
-    set_labels(ax, xs, all_rx_energies, all_label_strs)
-    summary_fn = "summary.pdf"
-    fig.savefig(summary_fn)
-    print(f"saved PDF to '{summary_fn}'")
+    set_labels(ax, xs, path_energies, path_labels)
+    path_fn = f"path_{path_name}.pdf"
+    fig.savefig(path_fn)
+    print(f"saved PDF to '{path_fn}'")
     plt.show()
 
 
@@ -279,7 +279,7 @@ def parse_args(args):
     )
     parser.add_argument("--parsedash", action="store_true")
     parser.add_argument("--no_alt", action="store_true")
-    parser.add_argument("--nosummary", action="store_true")
+    # parser.add_argument("--nosummary", action="store_true")
 
     return parser.parse_args(args)
 
@@ -288,7 +288,7 @@ def run():
     args = parse_args(sys.argv[1:])
 
     no_alt = args.no_alt
-    summary = not args.nosummary
+    # summary = not args.nosummary
 
     with open(args.yaml) as handle:
         inp_dict = yaml.load(handle)
@@ -323,8 +323,22 @@ def run():
     print_rx_energies(rx_energies)
     print()
 
-    dump_energies(rx_energies)
-    plot_rx_energies(rx_energies, inp_dict["reactions"], args.T, summary)
+    # dump_energies(rx_energies)
+
+    # Try to use the 'best' energies for plotting. That is with alternative
+    # single point and solvation.
+    rx_labels = inp_dict["reactions"]
+    best_rx_energies = {
+        rx_name: rx_energies[rx_name]["G_solv_alt"] for rx_name in rx_labels
+    }
+    plot_kwargs = {
+        "ms": 20,
+        "color": "k",
+        "marker": "_",
+        "linestyle": "--",
+    }
+    plot_rx_energies(best_rx_energies, rx_labels, args.T, plot_kwargs)
+    plot_paths(best_rx_energies, inp_dict["paths"], rx_labels, plot_kwargs)
 
 
 if __name__ == "__main__":
