@@ -204,7 +204,7 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
     pdf_name = f"{rx_name}.pdf"
     fig.savefig(pdf_name)
-    print(f"\tsaved PDF to '{pdf_name}'")
+    print(f"\tSaved PDF to '{pdf_name}'")
     print()
     plt.show()
 
@@ -233,7 +233,7 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
     set_labels(ax, xs, path_energies, path_labels)
     path_fn = f"path_{path_name}.pdf"
     fig.savefig(path_fn)
-    print(f"saved PDF to '{path_fn}'")
+    print(f"Saved PDF to '{path_fn}'")
     plt.show()
 
 
@@ -263,7 +263,6 @@ def print_rx_energies(rx_energies):
             ens_str = np.array2string(ens, precision=1)
             barrier = ens[1] - ens[0]
             print(f"\t{field: >10s}: {ens_str: >24} kJ/mol, barrier: {barrier: >6.1f} kJ/mol")
-    pass
 
 
 def parse_args(args):
