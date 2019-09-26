@@ -411,6 +411,17 @@ def run():
     else:
         print("Skipped plotting of reaction paths!")
 
+    path_reactions = set(list(it.chain(*paths.values())))
+    all_reactions = set(list(reactions.keys()))
+    remainder = all_reactions - path_reactions
+    if len(remainder) > 0:
+        print()
+        print("Warning!".upper())
+        print("Not all defined reactions appeared in (defined) paths!")
+        for i, rx in enumerate(remainder):
+            print(f"\t{i:02d}: {rx}")
+        print("Warning!".upper())
+
 
 if __name__ == "__main__":
     run()
