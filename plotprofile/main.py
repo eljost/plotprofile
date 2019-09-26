@@ -173,25 +173,20 @@ def plot_barrier(ax, x, y, barrier):
 
 
 def plot_rx_energies(rx_energies, rx_labels, temperature, plot_kwargs):
+    print("Reactions")
     for rx_name, energies in rx_energies.items():
         labels = rx_labels[rx_name]
         plot_rx(rx_name, energies, labels, temperature, plot_kwargs)
 
 def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     xs = [0, 1, 2]
-    print(rx_name)
     ed_lbl, _, prod_lbl = labels
 
     ens = energies - energies.min()
     ens *= AU2KJMOL
     educt, ts, product = ens
     barrier = ts - educt
-    kcal_barrier = barrier / CAL2J
-    print(f"\tbarrier = {barrier:.1f} kJ/mol ({kcal_barrier:.1f} kcal/mol)")
     k = reaction_rate(barrier*1000, temperature=temperature)
-    k_day = k * 3600 * 24
-    print(f"\tTST rate constant k = {k:.4e} 1/s ({k_day:.4e} 1/d) "
-          f"@ T={temperature:.2f} K")
     fig, ax = plt.subplots()
     ax.plot(xs, ens, **plot_kwargs)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
@@ -204,12 +199,13 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
     pdf_name = f"{rx_name}.pdf"
     fig.savefig(pdf_name)
+    # print(f"\t{rx_name}: Saved PDF to '{pdf_name}'")
     print(f"\tSaved PDF to '{pdf_name}'")
-    print()
     plt.show()
 
 
 def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
+    print("Paths")
     for path_name, rx_names in paths.items():
         path_energies = list()
         path_labels = list()
@@ -233,7 +229,7 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
     set_labels(ax, xs, path_energies, path_labels)
     path_fn = f"path_{path_name}.pdf"
     fig.savefig(path_fn)
-    print(f"Saved PDF to '{path_fn}'")
+    print(f"\tSaved PDF to '{path_fn}'")
     plt.show()
 
 
@@ -251,7 +247,7 @@ def dump_energies(rx_energies):
     print(f"Dumped energies to {csv_fn}.")
 
 
-def print_rx_energies(rx_energies):
+def print_rx_energies(rx_energies, temperature):
     print("Calculated reaction energies:")
     for rx_name, rx_ens in rx_energies.items():
         print(f"{rx_name}:")
@@ -263,6 +259,15 @@ def print_rx_energies(rx_energies):
             ens_str = np.array2string(ens, precision=1)
             barrier = ens[1] - ens[0]
             print(f"\t{field: >10s}: {ens_str: >24} kJ/mol, barrier: {barrier: >6.1f} kJ/mol")
+
+        print()
+        kcal_barrier = barrier / CAL2J
+        print(f"\t(best) barrier = {barrier:.1f} kJ/mol ({kcal_barrier:.1f} kcal/mol)")
+        k = reaction_rate(barrier*1000, temperature=temperature)
+        k_day = k * 3600 * 24
+        print(f"\tTST rate constant k = {k:.4e} 1/s ({k_day:.4e} 1/d) "
+              f"@ T={temperature:.2f} K")
+        print()
 
 
 def parse_args(args):
@@ -277,6 +282,7 @@ def parse_args(args):
     )
     parser.add_argument("--parsedash", action="store_true")
     parser.add_argument("--no_alt", action="store_true")
+    parser.add_argument("--norxs", action="store_true")
     parser.add_argument("--nopaths", action="store_true")
 
     return parser.parse_args(args)
@@ -286,6 +292,9 @@ def run():
     args = parse_args(sys.argv[1:])
 
     no_alt = args.no_alt
+    plot_rxs = not args.norxs
+    plot_paths = not args.nopaths
+    temperature = args.T
 
     with open(args.yaml) as handle:
         inp_dict = yaml.load(handle)
@@ -317,7 +326,7 @@ def run():
     print()
 
     rx_energies = make_reactions(inp_dict["reactions"], mol_energies)
-    print_rx_energies(rx_energies)
+    print_rx_energies(rx_energies, temperature)
     print()
 
     # dump_energies(rx_energies)
@@ -342,19 +351,21 @@ def run():
         "marker": "_",
         "linestyle": "--",
     }
-    plot_rx_energies(best_rx_energies, rx_labels, args.T, plot_kwargs)
+    if plot_rxs:
+        plot_rx_energies(best_rx_energies, rx_labels, temperature, plot_kwargs)
+    else:
+        print("Skipped plotting of reactions!")
 
-    if args.nopaths:
-        print("Skipped reaction paths!")
-        return
+    if plot_paths:
+        paths = inp_dict.get("paths", None)
+        if paths is None:
+            print("Found no defined paths in .yaml file. Using all defined "
+                  "reactions instead.")
+            paths = {"reaction path": list(rxs.keys())}
 
-    paths = inp_dict.get("paths", None)
-    if paths is None:
-        print("Found no defined paths in .yaml file. Using all defined "
-              "reactions instead.")
-        paths = {"reaction path": list(rxs.keys())}
-
-    plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
+        plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
+    else:
+        print("Skipped plotting of reaction paths!")
 
 
 if __name__ == "__main__":
