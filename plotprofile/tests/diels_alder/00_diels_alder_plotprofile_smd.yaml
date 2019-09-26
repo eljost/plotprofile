@@ -1,0 +1,24 @@
+program: orca
+molecules:
+ butadiene:
+  base: diels_alder_smd
+  freq: 02_01_butadiene_opt.out
+  solv: 02_03_butadiene_smd.out
+ ethene:
+  base: diels_alder_smd
+  freq: 03_01_ethene_opt.out
+  solv: 03_03_ethene_smd.out
+ ts:
+  base: diels_alder_smd
+  freq: 01_01_ts_opt.out
+  solv: 01_03_ts_smd.out
+ da_product:
+  base: diels_alder_smd
+  freq: 04_01_da_product.out
+  solv: 04_03_da_product_smd.out
+reactions:
+ # See https://pubs.acs.org/doi/10.1021/acs.organomet.8b00456 Figure 3
+ diels_alder:
+  educts: [butadiene, ethene]
+  ts: ts
+  products: da_product
