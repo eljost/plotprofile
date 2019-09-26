@@ -234,45 +234,6 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
     plt.show()
 
 
-def dump_energies(rx_energies):
-    cols = "educts ts products".split()
-    col_prods = ["_".join(_) for _ in it.product(GFIELDS, cols)]
-    # Flatten dict
-    rx_energies_flat = {
-        rx_name:  list(it.chain(*[ens[f] for f in GFIELDS]))
-	for rx_name, ens in rx_energies.items()
-    }
-    df = pd.DataFrame.from_dict(rx_energies_flat, orient="index", columns=col_prods)
-    csv_fn = "path_energies.csv"
-    df.to_csv(csv_fn)
-    print(f"Dumped energies to {csv_fn}.")
-
-
-def print_rx_energies(rx_energies, rx_strs, temperature):
-    print("Calculated reaction energies:")
-    for rx_name, rx_ens in rx_energies.items():
-        print(f"{rx_name.capitalize()}:")
-        print(textwrap.indent(rx_strs[rx_name], "\t"))
-        print()
-        for field in GFIELDS:
-            ens = rx_ens[field].copy()
-            # ens -= ens.min()
-            ens -= ens[0]
-            ens *= AU2KJMOL
-            ens_str = np.array2string(ens, precision=1)
-            barrier = ens[1] - ens[0]
-            print(f"\t{field: >10s}: {ens_str: >24} kJ/mol, barrier: {barrier: >6.1f} kJ/mol")
-
-        print()
-        kcal_barrier = barrier / CAL2J
-        print(f"\t(best) barrier = {barrier:.1f} kJ/mol ({kcal_barrier:.1f} kcal/mol)")
-        k = reaction_rate(barrier*1000, temperature=temperature)
-        k_day = k * 3600 * 24
-        print(f"\tTST rate constant k = {k:.4e} 1/s ({k_day:.4e} 1/d) "
-              f"@ T={temperature:.2f} K")
-        print()
-
-
 def get_reactants(rx):
     reactants = list()
     for key in ("educts", "ts", "products"):
@@ -300,6 +261,53 @@ def rx_to_string(rx):
     sep = " "*(len(eds) // 2) + "↓"
     rx_str = f"{eds}\n{sep}\n[{ts}]‡\n{sep}\n{prods}{add}"
     return rx_str
+
+
+def print_path_rx_energies(paths, rx_energies, rx_strs, temperature):
+    for path, rxs in paths.items():
+        print(f"# Reaction energies for {path}")
+        print()
+        path_energies = {rx_name: rx_energies[rx_name] for rx_name in rxs}
+        print_rx_energies(path_energies, rx_strs, temperature)
+        print()
+
+
+def print_rx_energies(rx_energies, rx_strs, temperature):
+    for rx_name, rx_ens in rx_energies.items():
+        print(f"\t## {rx_name.capitalize()}:")
+        print(textwrap.indent(rx_strs[rx_name], "\t"))
+        print()
+        for field in GFIELDS:
+            ens = rx_ens[field].copy()
+            # ens -= ens.min()
+            ens -= ens[0]
+            ens *= AU2KJMOL
+            ens_str = np.array2string(ens, precision=1)
+            barrier = ens[1] - ens[0]
+            print(f"\t{field: >10s}: {ens_str: >24} kJ/mol, barrier: {barrier: >6.1f} kJ/mol")
+
+        print()
+        kcal_barrier = barrier / CAL2J
+        print(f"\tG_solv_alt barrier = {barrier:.1f} kJ/mol ({kcal_barrier:.1f} kcal/mol)")
+        k = reaction_rate(barrier*1000, temperature=temperature)
+        k_day = k * 3600 * 24
+        print(f"\tTST rate constant k = {k:.4e} 1/s ({k_day:.4e} 1/d) "
+              f"@ T={temperature:.2f} K")
+        print()
+
+
+def dump_energies(rx_energies):
+    cols = "educts ts products".split()
+    col_prods = ["_".join(_) for _ in it.product(GFIELDS, cols)]
+    # Flatten dict
+    rx_energies_flat = {
+        rx_name:  list(it.chain(*[ens[f] for f in GFIELDS]))
+	for rx_name, ens in rx_energies.items()
+    }
+    df = pd.DataFrame.from_dict(rx_energies_flat, orient="index", columns=col_prods)
+    csv_fn = "path_energies.csv"
+    df.to_csv(csv_fn)
+    print(f"Dumped energies to {csv_fn}.")
 
 
 def parse_args(args):
@@ -362,11 +370,15 @@ def run():
     print()
 
     rx_energies = make_reactions(inp_dict["reactions"], mol_energies)
-    print()
-    print_rx_energies(rx_energies, rx_strs, temperature)
-    print()
 
-    # dump_energies(rx_energies)
+    paths = inp_dict.get("paths", None)
+    if paths is None:
+        print("Found no defined paths in .yaml file. Using all defined "
+              "reactions instead.")
+        paths = {"reaction path": list(rxs.keys())}
+
+    print_path_rx_energies(paths, rx_energies, rx_strs, temperature)
+    dump_energies(rx_energies)
 
     rx_labels = {}
     rxs = inp_dict["reactions"]
@@ -394,12 +406,6 @@ def run():
         print("Skipped plotting of reactions!")
 
     if plot_paths:
-        paths = inp_dict.get("paths", None)
-        if paths is None:
-            print("Found no defined paths in .yaml file. Using all defined "
-                  "reactions instead.")
-            paths = {"reaction path": list(rxs.keys())}
-
         plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
     else:
         print("Skipped plotting of reaction paths!")
