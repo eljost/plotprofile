@@ -9,6 +9,7 @@ import itertools as it
 from pathlib import Path
 from pprint import pprint
 import sys
+import textwrap
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -247,10 +248,12 @@ def dump_energies(rx_energies):
     print(f"Dumped energies to {csv_fn}.")
 
 
-def print_rx_energies(rx_energies, temperature):
+def print_rx_energies(rx_energies, rx_strs, temperature):
     print("Calculated reaction energies:")
     for rx_name, rx_ens in rx_energies.items():
-        print(f"{rx_name}:")
+        print(f"{rx_name.capitalize()}:")
+        print(textwrap.indent(rx_strs[rx_name], "\t"))
+        print()
         for field in GFIELDS:
             ens = rx_ens[field].copy()
             # ens -= ens.min()
@@ -268,6 +271,35 @@ def print_rx_energies(rx_energies, temperature):
         print(f"\tTST rate constant k = {k:.4e} 1/s ({k_day:.4e} 1/d) "
               f"@ T={temperature:.2f} K")
         print()
+
+
+def get_reactants(rx):
+    reactants = list()
+    for key in ("educts", "ts", "products"):
+        reactants.append(to_list(rx[key]))
+    # 'add' may not be present so we have to handle it separately
+    reactants.append(to_list(rx.get("add", [])))
+    return reactants
+
+
+def rx_to_string(rx):
+    print(rx)
+    educts, ts, products, add = get_reactants(rx)
+
+    eds = " + ".join(educts)
+    prods = " + ".join(products)
+    ts = ts[0]
+
+    # Don't print the 'add' species as they don't participate in the reaction.
+    # add = " "*10 + f"+({', '.join(add)})" if add else ""
+    # rx_str = f"{eds} ---> [{ts}]‡ ---> {prods}" + add
+    # rx_str = f"{eds} ---> [{ts}]‡ ---> {prods}"
+
+    add = f"\nConsidering additionally:  {', '.join(add)}" if add else ""
+    # sep = "\n" + " "*(len(eds) // 2) + "↓" + "\n"
+    sep = " "*(len(eds) // 2) + "↓"
+    rx_str = f"{eds}\n{sep}\n[{ts}]‡\n{sep}\n{prods}{add}"
+    return rx_str
 
 
 def parse_args(args):
@@ -299,6 +331,10 @@ def run():
     with open(args.yaml) as handle:
         inp_dict = yaml.load(handle)
 
+    rx_strs = {rx_name: rx_to_string(rx)
+               for rx_name, rx in inp_dict["reactions"].items()
+    }
+
     thermos = load_thermos(inp_dict["molecules"], inp_dict["program"])
     mol_energies = load_molecule_energies(thermos, no_alt=no_alt)
 
@@ -326,7 +362,8 @@ def run():
     print()
 
     rx_energies = make_reactions(inp_dict["reactions"], mol_energies)
-    print_rx_energies(rx_energies, temperature)
+    print()
+    print_rx_energies(rx_energies, rx_strs, temperature)
     print()
 
     # dump_energies(rx_energies)
