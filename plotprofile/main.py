@@ -332,15 +332,16 @@ def run():
     args = parse_args(sys.argv[1:])
 
     no_alt = args.no_alt
-    plot_rxs = not args.norxs
-    plot_paths = not args.nopaths
+    show_rxs = not args.norxs
+    show_paths = not args.nopaths
     temperature = args.T
 
     with open(args.yaml) as handle:
         inp_dict = yaml.load(handle)
 
+    reactions = inp_dict["reactions"]
     rx_strs = {rx_name: rx_to_string(rx)
-               for rx_name, rx in inp_dict["reactions"].items()
+               for rx_name, rx in reactions.items()
     }
 
     thermos = load_thermos(inp_dict["molecules"], inp_dict["program"])
@@ -363,28 +364,28 @@ def run():
         df = make_dash_data(inp_dict["reactions"], thermos, thermochem_df)
         df.to_pickle("dash_data")
 
+    print()
     print("Using these G-values:")
     for key, val in mol_energies.items():
         print(key)
         pprint(val._asdict())
     print()
 
-    rx_energies = make_reactions(inp_dict["reactions"], mol_energies)
+    rx_energies = make_reactions(reactions, mol_energies)
 
     paths = inp_dict.get("paths", None)
     if paths is None:
         print("Found no defined paths in .yaml file. Using all defined "
               "reactions instead.")
-        paths = {"reaction path": list(rxs.keys())}
+        paths = {"reaction path": list(reactions.keys())}
 
     print_path_rx_energies(paths, rx_energies, rx_strs, temperature)
     dump_energies(rx_energies)
 
     rx_labels = {}
-    rxs = inp_dict["reactions"]
     # Create label strings for plotting
-    for rx_name in rxs:
-        labels = [v for k, v in rxs[rx_name].items() if k!= "add"]
+    for rx_name in reactions:
+        labels = [v for k, v in reactions[rx_name].items() if k!= "add"]
         label_strs = [", ".join(to_list(lbl)) for lbl in labels]
         rx_labels[rx_name] = label_strs
 
@@ -400,12 +401,12 @@ def run():
         "marker": "_",
         "linestyle": "--",
     }
-    if plot_rxs:
+    if show_rxs:
         plot_rx_energies(best_rx_energies, rx_labels, temperature, plot_kwargs)
     else:
         print("Skipped plotting of reactions!")
 
-    if plot_paths:
+    if show_paths:
         plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
     else:
         print("Skipped plotting of reaction paths!")
