@@ -421,6 +421,10 @@ def run():
         for i, rx in enumerate(remainder):
             print(f"\t{i:02d}: {rx}")
         print("Warning!".upper())
+        print()
+
+        remainder_path = {"remainder": remainder, }
+        print_path_rx_energies(remainder_path, rx_energies, rx_strs, temperature)
 
 
 if __name__ == "__main__":
