@@ -324,6 +324,7 @@ def parse_args(args):
     parser.add_argument("--no_alt", action="store_true")
     parser.add_argument("--norxs", action="store_true")
     parser.add_argument("--nopaths", action="store_true")
+    parser.add_argument("-i", "--interactive", action="store_true")
 
     return parser.parse_args(args)
 
@@ -340,6 +341,15 @@ def run():
         inp_dict = yaml.load(handle)
 
     reactions = inp_dict["reactions"]
+
+    if args.interactive:
+        rx_keys = list(reactions.keys())
+        for i, rx in enumerate(rx_keys):
+            print(f"{i:02d}: {rx}")
+        ind = int(input("Show reaction: ", ))
+        rx_key = rx_keys[ind]
+        reactions = {rx_key: reactions[rx_key], }
+
     rx_strs = {rx_name: rx_to_string(rx)
                for rx_name, rx in reactions.items()
     }
@@ -406,7 +416,7 @@ def run():
     else:
         print("Skipped plotting of reactions!")
 
-    if show_paths:
+    if show_paths and not args.interactive:
         plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
     else:
         print("Skipped plotting of reaction paths!")
