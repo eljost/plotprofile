@@ -317,7 +317,7 @@ def dump_energies(rx_energies):
 def parse_args(args):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("yaml",
+    parser.add_argument("yaml", nargs="?",
         help=".yaml file containing the description of all relevant molecules "
              "and reactions"
     )
@@ -328,6 +328,10 @@ def parse_args(args):
     parser.add_argument("--no_alt", action="store_true")
     parser.add_argument("--norxs", action="store_true")
     parser.add_argument("--nopaths", action="store_true")
+    parser.add_argument("-q", "--quick",
+        help="Quick plotting of one profile. Educts, TS and products are separated "
+            "by ';'. Multiple educts and/or products are separated by ','. Example: "
+            "plotprofile --quick 'ed.out;ts.out;prod.out'.")
     parser.add_argument("-i", "--interactive", action="store_true")
 
     return parser.parse_args(args)
@@ -341,8 +345,39 @@ def run():
     show_paths = not args.nopaths
     temperature = args.T
 
-    with open(args.yaml) as handle:
-        inp_dict = yaml.load(handle)
+    if args.quick:
+        show_paths = False
+        educts, ts, products = [reactants.split(",")
+                                for reactants in args.quick.split(";")]
+        assert len(ts) == 1
+        ed_keys = [f"ed{i}" for i in range(len(educts))]
+        prod_keys = [f"prod{i}" for i in range(len(products))]
+
+        inp_dict = {
+            "molecules": dict(),
+            "program": "orca",
+        }
+        def add_mols(keys, fns):
+            for key, fn in zip(keys, fns):
+                inp_dict["molecules"][key] = {
+                    "freq": fn,
+                }
+
+        add_mols(ed_keys, educts)
+        add_mols(["ts", ], ts)
+        add_mols(prod_keys, products)
+
+        # Dummy reaction
+        inp_dict["reactions"] = {
+            "quick": {
+                "educts": ed_keys,
+                "ts": "ts",
+                "products": prod_keys,
+            }
+        }
+    else:
+        with open(args.yaml) as handle:
+            inp_dict = yaml.load(handle)
 
     reactions = inp_dict["reactions"]
 
