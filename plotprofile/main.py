@@ -200,8 +200,10 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
     pdf_name = f"{rx_name}.pdf"
     fig.savefig(pdf_name)
+    svg_name = f"{rx_name}.svg"
+    fig.savefig(svg_name)
     # print(f"\t{rx_name}: Saved PDF to '{pdf_name}'")
-    print(f"\tSaved PDF to '{pdf_name}'")
+    print(f"\tSaved PDF to '{pdf_name}' and '{svg_name}'")
     plt.show()
 
 
@@ -230,7 +232,9 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
     set_labels(ax, xs, path_energies, path_labels)
     path_fn = f"path_{path_name}.pdf"
     fig.savefig(path_fn)
-    print(f"\tSaved PDF to '{path_fn}'")
+    path_svg_fn = f"path_{path_name}.svg"
+    fig.savefig(path_svg_fn)
+    print(f"\tSaved PDF to '{path_fn}' and '{path_svg_fn}'")
     plt.show()
 
 
