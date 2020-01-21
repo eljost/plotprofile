@@ -455,7 +455,7 @@ def run():
     else:
         print("Skipped plotting of reactions!")
 
-    if show_paths and not args.interactive:
+    if show_paths and not args.interactive and (len(best_rx_energies) > 1):
         plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
     else:
         print("Skipped plotting of reaction paths!")
