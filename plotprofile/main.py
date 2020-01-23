@@ -6,6 +6,7 @@
 import argparse
 from collections import namedtuple
 import itertools as it
+import os
 from pathlib import Path
 from pprint import pprint
 import sys
@@ -173,6 +174,22 @@ def set_labels(ax, xs, ys, label_strs, y_shift=10):
         ax.annotate(lbl, (x, y_shifted), ha="center", fontweight="bold")
 
 
+def savefig(fig, base_name, out_dir=None, save_as=(".pdf", ".svg")):
+    if out_dir is None:
+        out_dir = "."
+    out_path = Path(out_dir)
+    try:
+        os.mkdir(out_path)
+    except FileExistsError:
+        pass
+
+    names = [base_name + ext for ext in save_as]
+    full_paths = [out_path / name for name in names]
+    [fig.savefig(p) for p in full_paths]
+    print(f"\tSaved {', '.join(names)}")
+    return full_paths
+
+
 def plot_barrier(ax, x, y, barrier):
     props = {
         "arrowstyle": "<->",
@@ -207,13 +224,10 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     ax.spines["right"].set_visible(False)
     ax.tick_params(bottom=False, labelbottom=False)
     fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
-    pdf_name = f"{rx_name}.pdf"
-    fig.savefig(pdf_name)
-    svg_name = f"{rx_name}.svg"
-    fig.savefig(svg_name)
-    # print(f"\t{rx_name}: Saved PDF to '{pdf_name}'")
-    print(f"\tSaved PDF to '{pdf_name}' and '{svg_name}'")
-    plt.show()
+    savefig(fig, rx_name, out_dir="reactions")
+
+    plt.close()
+    # plt.show()
 
 
 def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
@@ -239,12 +253,10 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
     ax.set_title(path_name)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
     set_labels(ax, xs, path_energies, path_labels)
-    path_fn = f"path_{path_name}.pdf"
-    fig.savefig(path_fn)
-    path_svg_fn = f"path_{path_name}.svg"
-    fig.savefig(path_svg_fn)
-    print(f"\tSaved PDF to '{path_fn}' and '{path_svg_fn}'")
-    plt.show()
+    savefig(fig, path_name, out_dir="paths")
+
+    plt.close()
+    # plt.show()
 
 
 def get_reactants(rx):
@@ -335,7 +347,7 @@ def plot_compare(name, molecules, energies, ylabel):
 
 def compare_molecules(to_compare, mol_energies, attr="G_solv_alt"):
     for name, molecules in to_compare.items():
-        print(f"Comparing {name}")
+        print(f"Comparison of '{name}'")
         energies = np.array([getattr(mol_energies[mol], attr) for mol in molecules])
         energies -= energies.min()
         energies *= AU2KJMOL
@@ -349,7 +361,11 @@ def compare_molecules(to_compare, mol_energies, attr="G_solv_alt"):
                    "kJ mol⁻¹ in energy.")
 
         fig, ax = plot_compare(name, molecules, energies, ylabel=attr)
-        plt.show()
+        savefig(fig, name + "_comparison", out_dir="comparisons")
+
+        plt.close()
+        # plt.show()
+        print()
 
 
 def parse_args(args):
