@@ -33,6 +33,13 @@ GibbsEnergies = namedtuple("GibbsEnergies",
 
 GFIELDS = GibbsEnergies._fields
 
+PLOT_KWARGS = {
+    "ms": 20,
+    "color": "k",
+    "marker": "_",
+    "linestyle": "--",
+}
+
 
 def load_thermos(molecules, program):
     parser_funcs = {
@@ -158,10 +165,11 @@ def reaction_rate(activation_energy, temperature=298.15):
     return KB*T/H_PLANCK * np.exp(-activation_energy/(R*T))
 
 
-def set_labels(ax, xs, ys, label_strs):
+def set_labels(ax, xs, ys, label_strs, y_shift=10):
     min_y = min(ys)
     for x, y, lbl in zip(xs, ys, label_strs):
-        y_shifted = max(min_y, y-10)
+        # Print labels below the markes so we decrease the y position a bit
+        y_shifted = max(min_y, y-y_shift)
         ax.annotate(lbl, (x, y_shifted), ha="center", fontweight="bold")
 
 
@@ -178,6 +186,7 @@ def plot_rx_energies(rx_energies, rx_labels, temperature, plot_kwargs):
     for rx_name, energies in rx_energies.items():
         labels = rx_labels[rx_name]
         plot_rx(rx_name, energies, labels, temperature, plot_kwargs)
+
 
 def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     xs = [0, 1, 2]
@@ -314,6 +323,35 @@ def dump_energies(rx_energies):
     print(f"Dumped energies to {csv_fn}.")
 
 
+def plot_compare(name, molecules, energies, ylabel):
+    fig, ax = plt.subplots()
+    ax.plot(energies, "ko-", **PLOT_KWARGS)
+    xs = [i for i, _ in enumerate(molecules)]
+    set_labels(ax, xs, energies, molecules, y_shift=1)
+    ax.set_ylabel(f"$\Delta${ylabel} / kJ mol⁻¹")
+    ax.set_title(f"Comparison: '{name}'")
+    return fig, ax
+
+
+def compare_molecules(to_compare, mol_energies, attr="G_solv_alt"):
+    for name, molecules in to_compare.items():
+        print(f"Comparing {name}")
+        energies = np.array([getattr(mol_energies[mol], attr) for mol in molecules])
+        energies -= energies.min()
+        energies *= AU2KJMOL
+        inds = np.argsort(energies)
+
+        most_stable_ind = inds[0]
+        print(f"\t'{molecules[most_stable_ind]}' has the lowest energy.")
+        # Skip first entry as this was already handled above (most_stable)
+        for ind in inds[1:]:
+            print(f"\t'{molecules[ind]}' is {energies[ind]:.2f} higher "
+                   "kJ mol⁻¹ in energy.")
+
+        fig, ax = plot_compare(name, molecules, energies, ylabel=attr)
+        plt.show()
+
+
 def parse_args(args):
     parser = argparse.ArgumentParser()
 
@@ -387,14 +425,20 @@ def run():
             print(f"{i:02d}: {rx}")
         ind = int(input("Show reaction: ", ))
         rx_key = rx_keys[ind]
-        reactions = {rx_key: reactions[rx_key], }
+        reaction = reactions[rx_key]
+        reactions = {rx_key: reaction, }
+        # Modify molecules so only the ones actually needed are loaded
+        rx_molecules = list(it.chain(*[to_list(mols) for mols in reaction.values()]))
+        inp_dict["molecules"] = {key: val for key, val in inp_dict["molecules"].items()
+                                 if key in rx_molecules}
+
+    molecules = inp_dict["molecules"]
+    thermos = load_thermos(molecules, inp_dict["program"])
+    mol_energies = load_molecule_energies(thermos, no_alt=no_alt)
 
     rx_strs = {rx_name: rx_to_string(rx)
                for rx_name, rx in reactions.items()
     }
-
-    thermos = load_thermos(inp_dict["molecules"], inp_dict["program"])
-    mol_energies = load_molecule_energies(thermos, no_alt=no_alt)
 
     if args.parsedash:
         freq_logs = {k: v["freq"] for k, v in inp_dict["molecules"].items()}
@@ -446,12 +490,7 @@ def run():
         rx_name: rx_energies[rx_name]["G_solv_alt"] for rx_name in rx_labels
     }
 
-    plot_kwargs = {
-        "ms": 20,
-        "color": "k",
-        "marker": "_",
-        "linestyle": "--",
-    }
+    plot_kwargs = PLOT_KWARGS
     if show_rxs:
         plot_rx_energies(best_rx_energies, rx_labels, temperature, plot_kwargs)
     else:
@@ -476,6 +515,9 @@ def run():
 
         remainder_path = {"remainder": remainder, }
         print_path_rx_energies(remainder_path, rx_energies, rx_strs, temperature)
+
+    compare_molecules(inp_dict["compare"], mol_energies)
+
 
 
 if __name__ == "__main__":
