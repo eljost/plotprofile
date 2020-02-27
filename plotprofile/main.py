@@ -347,7 +347,7 @@ def plot_compare(name, molecules, energies, ylabel):
 
 def compare_molecules(to_compare, mol_energies, attr="G_solv_alt"):
     for name, molecules in to_compare.items():
-        print(f"Comparison of '{name}'")
+        print(f"Comparison of '{name}' using '{attr}'")
         energies = np.array([getattr(mol_energies[mol], attr) for mol in molecules])
         energies -= energies.min()
         energies *= AU2KJMOL
@@ -361,7 +361,8 @@ def compare_molecules(to_compare, mol_energies, attr="G_solv_alt"):
                    "kJ mol⁻¹ in energy.")
 
         fig, ax = plot_compare(name, molecules, energies, ylabel=attr)
-        savefig(fig, name + "_comparison", out_dir="comparisons")
+        base_name = f"{name}_{attr}_comparison"
+        savefig(fig, base_name, out_dir="comparisons")
 
         plt.close()
         # plt.show()
@@ -536,6 +537,7 @@ def run():
         print_path_rx_energies(remainder_path, rx_energies, rx_strs, temperature)
 
     compare_molecules(inp_dict["compare"], mol_energies)
+    compare_molecules(inp_dict["compare"], mol_energies, attr="G_gas_alt")
 
 
 if __name__ == "__main__":
