@@ -429,9 +429,12 @@ def run():
                 "products": prod_keys,
             }
         }
-    else:
+    elif args.yaml:
         with open(args.yaml) as handle:
             inp_dict = yaml.load(handle)
+    else:
+        print("Specify either a YAML file or use --quick! See also 'plotprofile --help'")
+        sys.exit()
 
     reactions = inp_dict["reactions"]
 
@@ -533,7 +536,6 @@ def run():
         print_path_rx_energies(remainder_path, rx_energies, rx_strs, temperature)
 
     compare_molecules(inp_dict["compare"], mol_energies)
-
 
 
 if __name__ == "__main__":
