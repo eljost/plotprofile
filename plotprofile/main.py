@@ -35,10 +35,11 @@ GibbsEnergies = namedtuple("GibbsEnergies",
 GFIELDS = GibbsEnergies._fields
 
 PLOT_KWARGS = {
-    "ms": 20,
+    "ms": 30,
+    "mew": 2,
     "color": "k",
     "marker": "_",
-    "linestyle": "--",
+    "ls": "--",
 }
 
 
@@ -226,26 +227,27 @@ def expand_points(ax, xs, ys, ms):
     return xx, yy
 
 
-def plot(ax, xs, ys, marker_kwargs=None):
-    marker_kwargs = {
-        "ms": 30,
+def plot(ax, xs, ys):
+    marker_kwargs = PLOT_KWARGS.copy()
+    marker_update = {
         "ls": "",
-        "color": "k",
-        "marker": "_",
         "zorder": 10,
-        "mew": 2,
     }
-    # Plot only marker
-    ax.plot(xs, ys, **marker_kwargs)
-    xx, yy = expand_points(ax, xs, ys, marker_kwargs["ms"])
-    line_kwargs = marker_kwargs.copy()
-    _ = {
+    marker_kwargs.update(marker_update)
+
+    line_kwargs = PLOT_KWARGS.copy()
+    line_update = {
         "ls": "--",
         "marker": "",
         "zorder": 1,
     }
-    line_kwargs.update(_)
-    # Plot lines
+    line_kwargs.update(line_update)
+
+    # Plot only marker
+    ax.plot(xs, ys, **marker_kwargs)
+
+    # Plot lines. Expand points for this
+    xx, yy = expand_points(ax, xs, ys, marker_kwargs["ms"])
     ax.plot(xx, yy, **line_kwargs)
 
 
@@ -257,14 +259,14 @@ def plot_barrier(ax, x, y, barrier):
     ax.text(x+.05, y+(barrier/2), f"{barrier:.1f} kJ/mol")
 
 
-def plot_rx_energies(rx_energies, rx_labels, temperature, plot_kwargs):
+def plot_rx_energies(rx_energies, rx_labels, temperature):
     print("Reactions")
     for rx_name, energies in rx_energies.items():
         labels = rx_labels[rx_name]
-        plot_rx(rx_name, energies, labels, temperature, plot_kwargs)
+        plot_rx(rx_name, energies, labels, temperature)
 
 
-def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
+def plot_rx(rx_name, energies, labels, temperature):
     xs = [0, 1, 2]
     ed_lbl, _, prod_lbl = labels
 
@@ -274,7 +276,6 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     barrier = ts - educt
     k = reaction_rate(barrier*1000, temperature=temperature)
     fig, ax = subplots()
-    # ax.plot(xs, ens, **plot_kwargs)
     plot(ax, xs, ens)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
     set_labels(ax, xs, ens, labels)
@@ -290,7 +291,7 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     plt.close()
 
 
-def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
+def plot_paths(rx_energies, paths, rx_labels):
     print("Paths")
     for path_name, rx_names in paths.items():
         path_energies = list()
@@ -300,13 +301,11 @@ def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
             path_label = [lbl.replace(",", ",\n") for lbl in rx_labels[rx_name]]
             path_labels.extend(path_label)
         path_energies = np.array(path_energies)
-        plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs)
-        plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs,
-                  fuse=True)
+        plot_path(path_energies, path_name, rx_names, path_labels)
+        plot_path(path_energies, path_name, rx_names, path_labels, fuse=True)
 
 
-def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs,
-              fuse=False):
+def plot_path(path_energies, path_name, rx_names, path_labels, fuse=False):
     path_energies = path_energies.copy()
     path_labels = path_labels.copy()
 
@@ -326,7 +325,6 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs,
     path_energies -= path_energies[0]
     path_energies *= AU2KJMOL
     xs = np.arange(path_energies.size)
-    # ax.plot(xs, path_energies, **plot_kwargs)
     plot(ax, xs, path_energies)
     ax.set_title(path_name)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
@@ -604,14 +602,13 @@ def run():
         rx_name: rx_energies[rx_name]["G_solv_alt"] for rx_name in rx_labels
     }
 
-    plot_kwargs = PLOT_KWARGS
     if show_rxs:
-        plot_rx_energies(best_rx_energies, rx_labels, temperature, plot_kwargs)
+        plot_rx_energies(best_rx_energies, rx_labels, temperature)
     else:
         print("Skipped plotting of reactions!")
 
     if show_paths and not args.interactive and (len(best_rx_energies) > 1):
-        plot_paths(best_rx_energies, paths, rx_labels, plot_kwargs)
+        plot_paths(best_rx_energies, paths, rx_labels)
     else:
         print("Skipped plotting of reaction paths!")
 
