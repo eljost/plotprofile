@@ -416,8 +416,8 @@ def dump_energies(rx_energies):
 
 def plot_compare(name, molecules, energies, ylabel):
     fig, ax = subplots()
-    ax.plot(energies, "ko-", **PLOT_KWARGS)
     xs = [i for i, _ in enumerate(molecules)]
+    plot(ax, xs, energies)
     set_labels(ax, xs, energies, molecules, y_shift=1)
     ax.set_ylabel(f"$\Delta${ylabel} / kJ mol⁻¹")
     ax.set_title(f"Comparison: '{name}'")
