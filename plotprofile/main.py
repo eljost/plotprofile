@@ -166,11 +166,18 @@ def reaction_rate(activation_energy, temperature=298.15):
     return KB*T/H_PLANCK * np.exp(-activation_energy/(R*T))
 
 
-def set_labels(ax, xs, ys, label_strs, y_shift=10):
+def set_labels(ax, xs, ys, label_strs, y_shift=10, ts_above=False,
+               fused=False):
     min_y = min(ys)
-    for x, y, lbl in zip(xs, ys, label_strs):
+    max_y = max(ys)
+    ts_step = 2 if fused else 3
+    ts_inds = range(1, len(label_strs), ts_step)
+    for i, (x, y, lbl) in enumerate(zip(xs, ys, label_strs)):
         # Print labels below the markes so we decrease the y position a bit
         y_shifted = max(min_y, y-y_shift)
+        # Put TS label above marker, instead of below
+        if ts_above and (i in ts_inds):
+            y_shifted = min(max_y, y+.75*y_shift)
         ax.annotate(lbl, (x, y_shifted), ha="center", fontweight="bold")
 
 
@@ -237,12 +244,29 @@ def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
         path_labels = list()
         for rx_name in rx_names:
             path_energies.extend(rx_energies[rx_name])
-            path_labels.extend(rx_labels[rx_name])
+            path_label = [lbl.replace(",", ",\n") for lbl in rx_labels[rx_name]]
+            path_labels.extend(path_label)
         path_energies = np.array(path_energies)
         plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs)
+        plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs,
+                  fuse=True)
 
 
-def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
+def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs,
+              fuse=False):
+    path_energies = path_energies.copy()
+    path_labels = path_labels.copy()
+
+    if fuse:
+        assert len(path_energies) % 3 == 0
+        # Keep the last entry, don't drop it
+        drop_inds = range(2, len(path_energies), 3)[:-1]
+        keep_inds = [i for i, _ in enumerate(path_energies)
+                     if i not in drop_inds]
+        # path_energies = np.array([path_energies[i] for i in keep_inds])
+        path_energies = path_energies[keep_inds]
+        path_labels = [path_labels[i] for i in keep_inds]
+
     start_energy = path_energies[0]
 
     fig, ax = plt.subplots()
@@ -252,8 +276,10 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs):
     ax.plot(xs, path_energies, **plot_kwargs)
     ax.set_title(path_name)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
-    set_labels(ax, xs, path_energies, path_labels)
-    savefig(fig, path_name, out_dir="paths")
+    set_labels(ax, xs, path_energies, path_labels, y_shift=35, ts_above=True,
+               fused=fuse)
+    base_name = path_name + ("_fused" if fuse else "")
+    savefig(fig, base_name, out_dir="paths")
 
     plt.close()
     # plt.show()
