@@ -278,13 +278,13 @@ def plot_rx(rx_name, energies, labels, temperature):
     fig, ax = subplots()
     plot(ax, xs, ens)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
-    set_labels(ax, xs, ens, labels)
+    set_labels(ax, xs, ens, labels, ts_above=True)
     plot_barrier(ax, 0, educt, barrier)
     ax.spines["top"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.tick_params(bottom=False, labelbottom=False)
-    fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
+    ax.set_title(f"{rx_name}, k={k:.4e} 1/s")
     savefig(fig, rx_name, out_dir="reactions")
 
     # plt.show()
@@ -298,8 +298,7 @@ def plot_paths(rx_energies, paths, rx_labels):
         path_labels = list()
         for rx_name in rx_names:
             path_energies.extend(rx_energies[rx_name])
-            path_label = [lbl.replace(",", ",\n") for lbl in rx_labels[rx_name]]
-            path_labels.extend(path_label)
+            path_labels.extend(rx_labels[rx_name])
         path_energies = np.array(path_energies)
         plot_path(path_energies, path_name, rx_names, path_labels)
         plot_path(path_energies, path_name, rx_names, path_labels, fuse=True)
@@ -592,7 +591,7 @@ def run():
                 lbl = [lbl, ]
             # Replace with pretty labels
             lbl = [mol_labels[mol] for mol in lbl]
-            lbl = ", ".join(lbl)
+            lbl = ",\n".join(lbl)
             pretty_labels.append(lbl)
         rx_labels[rx_name] = pretty_labels
 
