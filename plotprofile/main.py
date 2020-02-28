@@ -296,15 +296,20 @@ def plot_paths(rx_energies, paths, rx_labels):
     for path_name, rx_names in paths.items():
         path_energies = list()
         path_labels = list()
+        barriers = list()
         for rx_name in rx_names:
+            educts, ts, _ = rx_energies[rx_name]
+            barrier = ts - educts
+            barriers.append(barrier)
             path_energies.extend(rx_energies[rx_name])
             path_labels.extend(rx_labels[rx_name])
         path_energies = np.array(path_energies)
-        plot_path(path_energies, path_name, rx_names, path_labels)
-        plot_path(path_energies, path_name, rx_names, path_labels, fuse=True)
+        barriers = np.array(barriers)
+        plot_path(path_energies, path_name, barriers, rx_names, path_labels)
+        plot_path(path_energies, path_name, barriers, rx_names, path_labels, fuse=True)
 
 
-def plot_path(path_energies, path_name, rx_names, path_labels, fuse=False):
+def plot_path(path_energies, path_name, barriers, rx_names, path_labels, fuse=False):
     path_energies = path_energies.copy()
     path_labels = path_labels.copy()
 
@@ -314,7 +319,6 @@ def plot_path(path_energies, path_name, rx_names, path_labels, fuse=False):
         drop_inds = range(2, len(path_energies), 3)[:-1]
         keep_inds = [i for i, _ in enumerate(path_energies)
                      if i not in drop_inds]
-        # path_energies = np.array([path_energies[i] for i in keep_inds])
         path_energies = path_energies[keep_inds]
         path_labels = [path_labels[i] for i in keep_inds]
 
@@ -329,6 +333,16 @@ def plot_path(path_energies, path_name, rx_names, path_labels, fuse=False):
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
     set_labels(ax, xs, path_energies, path_labels, y_shift=35, ts_above=True,
                fused=fuse)
+
+    barriers = barriers.copy()
+    barriers *= AU2KJMOL
+    barrier_str = "Barriers in kJ mol⁻¹\n\n" \
+        + "\n".join([
+            # f"{rx_name}: {barrier: >6.1f}" for rx_name, barrier in zip(rx_names_padded,
+            f"{rx_name}: {barrier: >6.1f}" for rx_name, barrier in zip(rx_names,
+                                                                       barriers)
+        ])
+    ax.annotate(barrier_str, (0, -175))
     fused_str = "_fused" if fuse else ""
     base_name = path_name + fused_str
     out_dir = "paths" + fused_str
@@ -440,7 +454,9 @@ def compare_molecules(to_compare, mol_energies, attr="G_solv_alt"):
                    "kJ mol⁻¹ in energy.")
 
         fig, ax = plot_compare(name, molecules, energies, ylabel=attr)
-        base_name = f"{name}_{attr}_comparison"
+        # Only use attr in name if it is not the default
+        attr_str = "" if attr == "G_solv_alt" else f"_{attr}"
+        base_name = f"{name}{attr_str}_comparison"
         savefig(fig, base_name, out_dir="comparisons")
 
         plt.close()
@@ -627,7 +643,7 @@ def run():
         print_path_rx_energies(remainder_path, rx_energies, rx_strs, temperature)
 
     compare_molecules(inp_dict["compare"], mol_energies)
-    compare_molecules(inp_dict["compare"], mol_energies, attr="G_gas_alt")
+    # compare_molecules(inp_dict["compare"], mol_energies, attr="G_gas_alt")
 
 
 if __name__ == "__main__":
