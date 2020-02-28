@@ -197,6 +197,58 @@ def savefig(fig, base_name, out_dir=None, save_as=(".pdf", ".svg")):
     return full_paths
 
 
+def subplots():
+    fig, ax = plt.subplots()
+    ax.xaxis.set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    return fig, ax
+
+
+def expand_points(ax, xs, ys, ms):
+    yy = np.repeat(ys, 2)
+    xx = np.arange(len(ys))[:,None]
+
+    trans = ax.transData.transform
+    trans_inv = ax.transData.inverted().transform
+    ms_half = ms / 2
+    # Transform to display coordinates
+    xt, yt = trans((0, 0))
+    xt_left = xt - ms_half
+    xt_right = xt + ms_half
+    # Transform back to data coordinates
+    x_left, _ = trans_inv((xt_left, yt))
+    x_right, _ = trans_inv((xt_right, yt))
+    dx = np.array((x_left, x_right))[None,:] * 1.325
+    xx = xx + dx
+    xx = xx.flatten()
+    return xx, yy
+
+
+def plot(ax, xs, ys, marker_kwargs=None):
+    marker_kwargs = {
+        "ms": 30,
+        "ls": "",
+        "color": "k",
+        "marker": "_",
+        "zorder": 10,
+        "mew": 2,
+    }
+    # Plot only marker
+    ax.plot(xs, ys, **marker_kwargs)
+    xx, yy = expand_points(ax, xs, ys, marker_kwargs["ms"])
+    line_kwargs = marker_kwargs.copy()
+    _ = {
+        "ls": "--",
+        "marker": "",
+        "zorder": 1,
+    }
+    line_kwargs.update(_)
+    # Plot lines
+    ax.plot(xx, yy, **line_kwargs)
+
+
 def plot_barrier(ax, x, y, barrier):
     props = {
         "arrowstyle": "<->",
@@ -221,8 +273,9 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     educt, ts, product = ens
     barrier = ts - educt
     k = reaction_rate(barrier*1000, temperature=temperature)
-    fig, ax = plt.subplots()
-    ax.plot(xs, ens, **plot_kwargs)
+    fig, ax = subplots()
+    # ax.plot(xs, ens, **plot_kwargs)
+    plot(ax, xs, ens)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
     set_labels(ax, xs, ens, labels)
     plot_barrier(ax, 0, educt, barrier)
@@ -233,8 +286,8 @@ def plot_rx(rx_name, energies, labels, temperature, plot_kwargs):
     fig.suptitle(f"{rx_name}: {ed_lbl} -> {prod_lbl}, k={k:.4e} 1/s")
     savefig(fig, rx_name, out_dir="reactions")
 
-    plt.close()
     # plt.show()
+    plt.close()
 
 
 def plot_paths(rx_energies, paths, rx_labels, plot_kwargs):
@@ -269,17 +322,20 @@ def plot_path(path_energies, path_name, rx_names, path_labels, plot_kwargs,
 
     start_energy = path_energies[0]
 
-    fig, ax = plt.subplots()
+    fig, ax = subplots()
     path_energies -= path_energies[0]
     path_energies *= AU2KJMOL
     xs = np.arange(path_energies.size)
-    ax.plot(xs, path_energies, **plot_kwargs)
+    # ax.plot(xs, path_energies, **plot_kwargs)
+    plot(ax, xs, path_energies)
     ax.set_title(path_name)
     ax.set_ylabel("$\Delta E / kJ \cdot mol^{-1}$")
     set_labels(ax, xs, path_energies, path_labels, y_shift=35, ts_above=True,
                fused=fuse)
-    base_name = path_name + ("_fused" if fuse else "")
-    savefig(fig, base_name, out_dir="paths")
+    fused_str = "_fused" if fuse else ""
+    base_name = path_name + fused_str
+    out_dir = "paths" + fused_str
+    savefig(fig, base_name, out_dir=out_dir)
 
     plt.close()
     # plt.show()
@@ -362,7 +418,7 @@ def dump_energies(rx_energies):
 
 
 def plot_compare(name, molecules, energies, ylabel):
-    fig, ax = plt.subplots()
+    fig, ax = subplots()
     ax.plot(energies, "ko-", **PLOT_KWARGS)
     xs = [i for i, _ in enumerate(molecules)]
     set_labels(ax, xs, energies, molecules, y_shift=1)
@@ -523,12 +579,24 @@ def run():
     print_path_rx_energies(paths, rx_energies, rx_strs, temperature)
     dump_energies(rx_energies)
 
+    mol_labels = {
+        # Use molecule key as fallback if no label is defined
+        mol: values.get("label", mol) for mol, values in molecules.items()
+    }
     rx_labels = {}
     # Create label strings for plotting
     for rx_name in reactions:
         labels = [v for k, v in reactions[rx_name].items() if k!= "add"]
-        label_strs = [", ".join(to_list(lbl)) for lbl in labels]
-        rx_labels[rx_name] = label_strs
+
+        pretty_labels = list()
+        for lbl in labels:
+            if isinstance(lbl, str):
+                lbl = [lbl, ]
+            # Replace with pretty labels
+            lbl = [mol_labels[mol] for mol in lbl]
+            lbl = ", ".join(lbl)
+            pretty_labels.append(lbl)
+        rx_labels[rx_name] = pretty_labels
 
     # Try to use the 'best' energies for plotting. That is with alternative
     # single point and solvation.
