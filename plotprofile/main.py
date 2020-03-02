@@ -259,14 +259,15 @@ def plot_barrier(ax, x, y, barrier):
     ax.text(x+.05, y+(barrier/2), f"{barrier:.1f} kJ/mol")
 
 
-def plot_rx_energies(rx_energies, rx_labels, temperature):
+def plot_reactions(rx_energies, rx_labels, rx_titles, temperature):
     print("Reactions")
     for rx_name, energies in rx_energies.items():
         labels = rx_labels[rx_name]
-        plot_rx(rx_name, energies, labels, temperature)
+        title = rx_titles[rx_name]
+        plot_reaction(rx_name, energies, labels, title, temperature)
 
 
-def plot_rx(rx_name, energies, labels, temperature):
+def plot_reaction(rx_name, energies, labels, title, temperature):
     xs = [0, 1, 2]
     ed_lbl, _, prod_lbl = labels
 
@@ -284,7 +285,7 @@ def plot_rx(rx_name, energies, labels, temperature):
     ax.spines["bottom"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.tick_params(bottom=False, labelbottom=False)
-    ax.set_title(f"{rx_name}, k={k:.4e} 1/s")
+    ax.set_title(f"{title}, k={k:.4e} 1/s")
     savefig(fig, rx_name, out_dir="reactions")
 
     # plt.show()
@@ -597,9 +598,11 @@ def run():
         mol: values.get("label", mol) for mol, values in molecules.items()
     }
     rx_labels = {}
+    rx_titles = {}
     # Create label strings for plotting
     for rx_name in reactions:
-        labels = [v for k, v in reactions[rx_name].items() if k!= "add"]
+        labels = [v for k, v in reactions[rx_name].items()
+                  if k in ("educts", "ts", "products")]
 
         pretty_labels = list()
         for lbl in labels:
@@ -611,6 +614,9 @@ def run():
             pretty_labels.append(lbl)
         rx_labels[rx_name] = pretty_labels
 
+        rx_title = reactions[rx_name].get("label", rx_name)
+        rx_titles[rx_name] = rx_title
+
     # Try to use the 'best' energies for plotting. That is with alternative
     # single point and solvation.
     best_rx_energies = {
@@ -618,7 +624,7 @@ def run():
     }
 
     if show_rxs:
-        plot_rx_energies(best_rx_energies, rx_labels, temperature)
+        plot_reactions(best_rx_energies, rx_labels, rx_titles, temperature)
     else:
         print("Skipped plotting of reactions!")
 
