@@ -292,25 +292,29 @@ def plot_reaction(rx_name, energies, labels, title, temperature):
     plt.close()
 
 
-def plot_paths(rx_energies, paths, rx_labels):
+def plot_paths(rx_energies, paths, rx_labels, rx_titles):
     print("Paths")
     for path_name, rx_names in paths.items():
         path_energies = list()
         path_labels = list()
         barriers = list()
+        titles = list()
         for rx_name in rx_names:
             educts, ts, _ = rx_energies[rx_name]
             barrier = ts - educts
             barriers.append(barrier)
             path_energies.extend(rx_energies[rx_name])
             path_labels.extend(rx_labels[rx_name])
+            titles.append(rx_titles[rx_name])
         path_energies = np.array(path_energies)
         barriers = np.array(barriers)
-        plot_path(path_energies, path_name, barriers, rx_names, path_labels)
-        plot_path(path_energies, path_name, barriers, rx_names, path_labels, fuse=True)
+        plot_path(path_energies, path_name, barriers, rx_names, titles, path_labels)
+        plot_path(path_energies, path_name, barriers, rx_names, titles, path_labels,
+                  fuse=True)
 
 
-def plot_path(path_energies, path_name, barriers, rx_names, path_labels, fuse=False):
+def plot_path(path_energies, path_name, barriers, rx_names, rx_titles,
+              path_labels, fuse=False):
     path_energies = path_energies.copy()
     path_labels = path_labels.copy()
 
@@ -335,15 +339,18 @@ def plot_path(path_energies, path_name, barriers, rx_names, path_labels, fuse=Fa
     set_labels(ax, xs, path_energies, path_labels, y_shift=35, ts_above=True,
                fused=fuse)
 
+    # Here also markup characters like $$ etc. are counted, so this may not
+    # be very accurate...
+    max_width = max([len(title) for title in rx_titles])
+    pad_titles = [" " * (max_width - len(title)) + title for title in rx_titles]
     barriers = barriers.copy()
     barriers *= AU2KJMOL
-    barrier_str = "Barriers in kJ mol⁻¹\n\n" \
+    barrier_str = "Barriers in kJ mol⁻¹:\n\n" \
         + "\n".join([
-            # f"{rx_name}: {barrier: >6.1f}" for rx_name, barrier in zip(rx_names_padded,
-            f"{rx_name}: {barrier: >6.1f}" for rx_name, barrier in zip(rx_names,
-                                                                       barriers)
+            f"{rx_title}: {barrier: >6.1f}" for rx_title, barrier in zip(pad_titles,
+                                                                         barriers)
         ])
-    ax.annotate(barrier_str, (0, -175))
+    ax.annotate(barrier_str, (0, -175), family="monospace")
     fused_str = "_fused" if fuse else ""
     base_name = path_name + fused_str
     out_dir = "paths" + fused_str
@@ -629,7 +636,7 @@ def run():
         print("Skipped plotting of reactions!")
 
     if show_paths and not args.interactive and (len(best_rx_energies) > 1):
-        plot_paths(best_rx_energies, paths, rx_labels)
+        plot_paths(best_rx_energies, paths, rx_labels, rx_titles)
     else:
         print("Skipped plotting of reaction paths!")
 
