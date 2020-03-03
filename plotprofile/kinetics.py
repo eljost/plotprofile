@@ -37,8 +37,12 @@ def kinetics(reactions, c0s, t_span, temp=298.15):
     # Set starting concentrations
     c0 = np.zeros(len(mols))
     for mol, c0_ in c0s.items():
-        i = mols.index(mol)
-        c0[i] = c0_
+        try:
+            i = mols.index(mol)
+            c0[i] = c0_
+        except ValueError:
+            print(f"Initial concentration for '{mol}' given, but it does not "
+                   "participate in any reaction!")
 
     # Create RHS of ODEs
     rhs = sym.lambdify(cs, exprs)

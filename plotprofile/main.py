@@ -649,8 +649,12 @@ def run():
 
     # Kinetics
     if "kinetics" in inp_dict:
+        kin_dict = inp_dict["kinetics"]
+        kin_reactions = kin_dict.get("only", reactions.keys())
+
         reaction_objs = list()
-        for rx_name, reactants in reactions.items():
+        for rx_name in kin_reactions:
+            reactants = reactions[rx_name]
             educts = reactants["educts"]
             ts = reactants["ts"]
             products = reactants["products"]
@@ -658,9 +662,9 @@ def run():
             frx = Reaction(rx_name, educts, ts, products, energies)
             brx = frx.get_back_reaction()
             reaction_objs.extend((frx, brx))
-        kin_dict = inp_dict["kinetics"]
         c0s = kin_dict["c0s"]
         t_span = kin_dict["t_span"]
+
         mols, res = kinetics(reaction_objs, c0s, t_span=t_span)
         plot_kinetics(mols, res)
 

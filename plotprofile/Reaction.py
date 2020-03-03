@@ -62,20 +62,17 @@ class Reaction:
             except TypeError:
                 k = self.k
 
-        # if k < k_thresh:
-            # return 0
+        if k < k_thresh:
+            return 0
 
         # Take stochiometry into account
-        look_at = {
-            1: self.products,
-            -1: self.educts,
-        }
-        stoch = sum([reactant == mol for reactant in look_at[factor]])
-        factor *= stoch
+        formed = sum([mol == reactant for reactant in self.products])
+        used = sum([mol == reactant for reactant in self.educts])
+        stoch = formed - used
 
         symbols = [str(mol_map[educt]) for educt in self.educts]
         j = "*".join(symbols)
-        expr = sym.sympify(f"{k}*{factor}*{j}")
+        expr = sym.sympify(f"{stoch}*{k}*{j}")
         return expr
 
 

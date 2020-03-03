@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from plotprofile.constants import KB, H_PLANCK, R
-from plotprofile.kinetics import kinetics
+from plotprofile.kinetics import kinetics, plot_kinetics
 from plotprofile.Reaction import Reaction
 
 
@@ -21,7 +21,17 @@ def test_kinetics():
     c0s = {"no": 1, "br2": 1}
     reactions = (frx, brx)
     t_span = (0, 10)
-    kinetics(reactions, c0s, t_span)
+    mols, res = kinetics(reactions, c0s, t_span)
+    # plot_kinetics(mols, res)
+
+    ref = {
+        "br2":  0.714712997785,
+        "no": 0.429425995571,
+        "nobr": 0.570574004429,
+    }
+    ys = res.y
+    ref_ys = [ref[mol] for mol in mols]
+    np.testing.assert_allclose(ys[:,-1], ref_ys)
 
 
 def test_eyring():
@@ -39,4 +49,4 @@ def test_eyring():
     ax.set_yscale("log")
     ax.set_xlim(10, 45)
     ax.set_ylim(1e-20, 1e15)
-    plt.show()
+    # plt.show()
