@@ -17,8 +17,11 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from plotprofile.helpers import to_list
+from plotprofile.kinetics import kinetics, plot_kinetics
 from plotprofile.parser import parse_orca
 from plotprofile.constants import KB, H_PLANCK, R, AU2KJMOL, CAL2J
+from plotprofile.Reaction import Reaction
 from thermoanalysis.QCData import QCData
 from thermoanalysis.thermo import thermochemistry
 
@@ -75,14 +78,6 @@ def load_molecule_energies(thermos, no_alt):
         energies[mol_name] = gibbs_energies
         print(f"Loaded molecule '{mol_name}'")
     return energies
-
-
-def to_list(inp):
-    if isinstance(inp, str):
-        inp = [inp, ]
-    elif not isinstance(inp, list):
-        inp = list(inp)
-    return inp
 
 
 def make_reactions(reactions, mol_energies):
@@ -590,8 +585,6 @@ def run():
     if args.interactive:
         paths = dict()
 
-    # Kinetics
-
     print_path_rx_energies(paths, rx_energies, rx_strs, temperature)
     dump_energies(rx_energies)
 
@@ -653,6 +646,23 @@ def run():
     to_compare = inp_dict.get("compare", dict())
     compare_molecules(to_compare, mol_energies)
     # compare_molecules(to_compare, mol_energies, attr="G_gas_alt")
+
+    # Kinetics
+    if "kinetics" in inp_dict:
+        reaction_objs = list()
+        for rx_name, reactants in reactions.items():
+            educts = reactants["educts"]
+            ts = reactants["ts"]
+            products = reactants["products"]
+            energies = rx_energies[rx_name]
+            frx = Reaction(rx_name, educts, ts, products, energies)
+            brx = frx.get_back_reaction()
+            reaction_objs.extend((frx, brx))
+        kin_dict = inp_dict["kinetics"]
+        c0s = kin_dict["c0s"]
+        t_span = kin_dict["t_span"]
+        mols, res = kinetics(reaction_objs, c0s, t_span=t_span)
+        plot_kinetics(mols, res)
 
 
 if __name__ == "__main__":
