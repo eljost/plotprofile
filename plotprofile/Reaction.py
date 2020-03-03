@@ -16,3 +16,14 @@ class Reaction:
         educts, ts, products = energies
         barrier = ts - educts
         return KB*temp/H_PLANCK * np.exp(-barrier/(R*temp))
+
+    def factor(self, mol):
+        factor = 0
+
+        # mol is used in reaction
+        if mol in self.educts:
+            factor = -1
+        # mol is formed in reaction
+        elif mol in self.products:
+            factor = 1
+        return factor

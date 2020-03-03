@@ -590,6 +590,8 @@ def run():
     if args.interactive:
         paths = dict()
 
+    # Kinetics
+
     print_path_rx_energies(paths, rx_energies, rx_strs, temperature)
     dump_energies(rx_energies)
 
