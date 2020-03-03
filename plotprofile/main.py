@@ -18,22 +18,15 @@ import pandas as pd
 import yaml
 
 from plotprofile.parser import parse_orca
+from plotprofile.constants import KB, H_PLANCK, R, AU2KJMOL, CAL2J
 from thermoanalysis.QCData import QCData
 from thermoanalysis.thermo import thermochemistry
 
 
-AU2KJMOL = 2625.499638 # PT pleaaaase
-KB = 1.380649e-23 # J/K, Boltzmann constant
-R = 8.3144598 # J/(K*mol), ideal gas constant
-H_PLANCK = 6.62607e-34 # Js, Planck constant
-CAL2J = 4.1868 # Calories to J
-
 GibbsEnergies = namedtuple("GibbsEnergies",
                            "G_gas G_solv G_gas_alt G_solv_alt"
 )
-
 GFIELDS = GibbsEnergies._fields
-
 PLOT_KWARGS = {
     "ms": 30,
     "mew": 2,
