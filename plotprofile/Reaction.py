@@ -29,6 +29,7 @@ class Reaction:
         return back_rx
 
     def reaction_rate(self, temp=298.15, barrier=None, energy_key="G_solv_alt"):
+        """barrier must be in [J/mol] if given."""
         if barrier is None:
             energies = self.energies[energy_key].copy()
             energies -= energies.min()
@@ -43,6 +44,11 @@ class Reaction:
         formed = sum([mol == reactant for reactant in self.products])
         used = sum([mol == reactant for reactant in self.educts])
         stoch = formed - used
+
+        # No need to do further calculations if the reaction does not change
+        # the concentration of the molecule.
+        if stoch == 0:
+            return 0
 
         if k == None:
             try:

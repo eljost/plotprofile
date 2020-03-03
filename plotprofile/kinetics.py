@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp
 import sympy as sym
-sym.init_printing()
 
 
 def kinetics(reactions, c0s, t_span, temp=298.15):
@@ -23,10 +22,19 @@ def kinetics(reactions, c0s, t_span, temp=298.15):
         exprs.append(mol_exprs)
 
     print()
-    for c_, mol_, exprs_ in zip(cs, mols, exprs):
-        print(mol_, c_)
-        print("\t", exprs_)
+    print("Rate constants")
+    max_width = max([len(rx.name) for rx in reactions])
+    for i, rx in enumerate(reactions):
+        k = rx.reaction_rate(temp=temp)
+        print(f"\t{rx.name: >{max_width}}: {k: >10.4e} 1/s")
+        if i > 0 and (i-1) % 2 == 0:
+            print()
 
+    # print()
+    # print("Rate equations")
+    # for c_, mol_, exprs_ in zip(cs, mols, exprs):
+        # print(mol_, c_)
+        # print("\t", exprs_)
 
     # Create Jacobian
     jac_ = sym.Matrix(exprs).jacobian(cs)
@@ -50,7 +58,9 @@ def kinetics(reactions, c0s, t_span, temp=298.15):
         return rhs(*cs)
 
     ivp_kwargs = {
-        "method": "LSODA",
+        # "method": "LSODA",
+        # "method": "Radau",
+        "method": "BDF",
         "rtol": 1e-8,
         "atol": 1e-11,
     }
@@ -64,9 +74,12 @@ def plot_kinetics(mols, res):
     ys = res.y
     colors = cm.tab20(np.linspace(0, 1, len(mols)))
     fig, ax = plt.subplots()
+    print()
+    print("Final concentrations [mol/l]")
     for mol, y, color in zip(mols, ys, colors):
         ax.plot(t, y, color=color, label=mol, linewidth=3)
         print(f"\t{mol: >30}: {y[-1]: .12f}")
-    ax.set_ylim(0, 1)
+    # ax.set_ylim(0, 1)
+    ax.set_yscale("log")
     ax.legend()
     plt.show()
