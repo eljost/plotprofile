@@ -37,23 +37,12 @@ class Reaction:
             barrier = ts - educts
         return KB*temp/H_PLANCK * np.exp(-barrier/(R*temp))
 
-    def factor(self, mol):
-        factor = 0
-
-        # mol is used in reaction
-        if mol in self.educts:
-            factor = -1
-        # mol is formed in reaction
-        elif mol in self.products:
-            factor = 1
-        return factor
-
     def get_expr(self, mol, mol_map, temp=298.15, k=None, energy_key="G_solv_alt",
                  k_thresh=1e-8):
-        factor = self.factor(mol)
-
-        if factor == 0:
-            return 0
+        # Take stochiometry into account
+        formed = sum([mol == reactant for reactant in self.products])
+        used = sum([mol == reactant for reactant in self.educts])
+        stoch = formed - used
 
         if k == None:
             try:
@@ -65,16 +54,10 @@ class Reaction:
         if k < k_thresh:
             return 0
 
-        # Take stochiometry into account
-        formed = sum([mol == reactant for reactant in self.products])
-        used = sum([mol == reactant for reactant in self.educts])
-        stoch = formed - used
-
         symbols = [str(mol_map[educt]) for educt in self.educts]
         j = "*".join(symbols)
         expr = sym.sympify(f"{stoch}*{k}*{j}")
         return expr
-
 
     def __str__(self):
         return self.name
