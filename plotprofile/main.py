@@ -655,8 +655,9 @@ def run():
         remainder_path = {"remainder": remainder, }
         print_path_rx_energies(remainder_path, rx_energies, rx_strs, temperature)
 
-    compare_molecules(inp_dict["compare"], mol_energies)
-    # compare_molecules(inp_dict["compare"], mol_energies, attr="G_gas_alt")
+    to_compare = inp_dict.get("compare", dict())
+    compare_molecules(to_compare, mol_energies)
+    # compare_molecules(to_compare, mol_energies, attr="G_gas_alt")
 
 
 if __name__ == "__main__":
