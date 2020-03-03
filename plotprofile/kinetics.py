@@ -25,6 +25,8 @@ def kinetics(reactions, c0s, t_span, temp=298.15):
     print("Rate constants")
     max_width = max([len(rx.name) for rx in reactions])
     for i, rx in enumerate(reactions):
+        if rx.energies is None:
+            continue
         k = rx.reaction_rate(temp=temp)
         print(f"\t{rx.name: >{max_width}}: {k: >10.4e} 1/s")
         if i > 0 and (i-1) % 2 == 0:
@@ -80,6 +82,7 @@ def plot_kinetics(mols, res):
         ax.plot(t, y, color=color, label=mol, linewidth=3)
         print(f"\t{mol: >30}: {y[-1]: .12f}")
     # ax.set_ylim(0, 1)
+    ax.set_ylim(1e-8, max(ys[:,0]))
     ax.set_yscale("log")
     ax.legend()
     plt.show()

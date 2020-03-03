@@ -50,12 +50,11 @@ class Reaction:
         if stoch == 0:
             return 0
 
-        if k == None:
-            try:
-                k = self.reaction_rate(temp, energy_key=energy_key)
-            # Raised when self.energies is None
-            except TypeError:
-                k = self.k
+        if k == None and self.k is not None:
+            print(f"Using self.k={self.k:.8f} fallback in '{self.name}'!")
+            k = self.k
+        elif k == None:
+            k = self.reaction_rate(temp, energy_key=energy_key)
 
         if k < k_thresh:
             return 0

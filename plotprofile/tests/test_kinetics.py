@@ -14,7 +14,6 @@ def test_kinetics():
     kb = 0.17
     energies = None
 
-    from plotprofile.Reaction import Reaction
     frx = Reaction("forward", educts, ts, products, energies, k=kf)
     k = frx.reaction_rate(barrier=25 * 4.184*1000)
     brx = Reaction("forward", products, ts, educts, energies, k=kb)
